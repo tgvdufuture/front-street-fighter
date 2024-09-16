@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
-import Navbar from "../components/Navbar";
-import Characters from "../components/Characters";
+import Navbar from "../../components/shared/Navbar";
+import Characters from "../../components/shared/Characters";
 import Image from "next/image";
 
 const features = [
