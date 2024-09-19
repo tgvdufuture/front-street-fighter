@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/shared/Navbar";
-
+import { Button } from "@/components/ui/button";
 interface Character {
   id: number;
   name: string;
@@ -18,7 +19,15 @@ interface Character {
   combat: number;
 }
 
-const CharacterCard = ({ character }: { character: Character }) => {
+const CharacterCard = ({
+  character,
+  onDelete,
+  onEdit,
+}: {
+  character: Character;
+  onDelete: (id: number) => void;
+  onEdit: (id: number) => void;
+}) => {
   return (
     <Card className="bg-gray-800 text-white">
       <CardHeader>
@@ -69,6 +78,19 @@ const CharacterCard = ({ character }: { character: Character }) => {
             </div>
             <Progress value={character.combat} className="h-2 bg-white" />
           </div>
+
+          {/* Buttons */}
+          <div className="flex space-x-4 mt-4">
+            <Button onClick={() => onEdit(character.id)} variant="outline">
+              Edit
+            </Button>
+            <Button
+              onClick={() => onDelete(character.id)}
+              variant="destructive"
+            >
+              Delete
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -88,8 +110,7 @@ export default function CharactersPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // In a real application, you would fetch data from your API here
-      // For demonstration, we'll use mock data
+      // Fetch or mock API response
       const mockCharacters: Character[] = [
         {
           id: 1,
@@ -140,12 +161,22 @@ export default function CharactersPage() {
     }
   };
 
+  const handleDelete = (id: number) => {
+    setCharacters((prevCharacters) =>
+      prevCharacters.filter((character) => character.id !== id)
+    );
+  };
+
+  const handleEdit = (id: number) => {
+    // Faire une redirection vers la page d'édition de personnages
+    console.log("Edit character with ID:", id);
+    // Vous pouvez utiliser la méthode `push` de `router` pour naviguer vers une autre page
+    // router.push(`/modification/${id}`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Navbar */}
       <Navbar />
-
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <motion.h1
           initial={{ y: -50, opacity: 0 }}
@@ -169,7 +200,11 @@ export default function CharactersPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <CharacterCard character={character} />
+                <CharacterCard
+                  character={character}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                />
               </motion.div>
             ))}
           </div>
