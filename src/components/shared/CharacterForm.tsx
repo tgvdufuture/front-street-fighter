@@ -136,7 +136,7 @@ export default function CharacterForm({ onSubmit }: CharacterFormProps) {
               step={1}
               value={[character[stat.key as keyof typeof character] as number]}
               onValueChange={(value) => handleStatChange(stat.key, value)}
-              className="w-full bg-red-300"
+              className="w-full bg-white"
             />
           </div>
         ))}
