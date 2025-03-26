@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import React from "react";
 import { Menu, X } from "lucide-react";
@@ -11,10 +11,27 @@ const navItems = [
   { name: "Créer un personnage", href: "/creation" },
   { name: "Arène", href: "/arenes" },
   { name: "Boutique", href: "/boutique" },
+  { name: "Connexion", href: "/connexion" },
+  { name: "Inscription", href: "/inscription" },
 ];
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("jwtToken");
+    if (token) {
+      setIsAuth(true);
+    }
+  }, []);
+
+  function handleLogout(){
+    localStorage.removeItem("jwtToken");
+    setIsAuth(false);
+    window.location.reload();
+  }
+
 
   return (
     <nav className="bg-gray-800 shadow-lg">
@@ -30,15 +47,34 @@ const Navbar = () => {
             </Link>
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
+              {navItems
+                  .filter((item) =>
+                    isAuth
+                      ? item.name !== "Connexion" && item.name !== "Inscription"
+                      : item.name !== "Créer un personnage"
+                  )
+                  .map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                {isAuth && (
+                  <>
+                    {/* <span className="text-gray-300 px-3 py-2 rounded-md text-sm font-medium">
+                      {username}
+                    </span> */}
+                    <button
+                      onClick={handleLogout}
+                      className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Déconnexion
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

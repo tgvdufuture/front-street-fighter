@@ -1,10 +1,11 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
+import Characters from "./Characters";
 
 const stats = [
   { name: "Force", key: "force" },
@@ -55,8 +56,9 @@ export default function CharacterForm({ onSubmit }: CharacterFormProps) {
   };
 
   // Soumission du formulaire
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
     onSubmit(character);
   };
 
@@ -72,7 +74,7 @@ export default function CharacterForm({ onSubmit }: CharacterFormProps) {
           type="text"
           value={character.nom}
           onChange={(e) =>
-            setCharacter((prev) => ({ ...prev, name: e.target.value }))
+            setCharacter((prev) => ({ ...prev, nom: e.target.value }))
           }
           required
           className="w-full bg-gray-800 text-white"

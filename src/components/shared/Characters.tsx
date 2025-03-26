@@ -22,7 +22,7 @@ const Characters = () => {
 
   const fetchCharacters = async () => {
     try {
-      const response = await fetch("https://api.example.com/characters"); // Replace with your Symfony API endpoint
+      const response = await fetch("http://127.0.0.1:8000/api/characters"); // Remplacez par l'URL de votre API Symfony
       if (!response.ok) {
         throw new Error("Failed to fetch characters");
       }
@@ -43,6 +43,22 @@ const Characters = () => {
     setCurrentCharacter(
       (prev) => (prev - 1 + characters.length) % characters.length
     );
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const response = await fetch(`/api/characters/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete character");
+      }
+
+      setCharacters((prev) => prev.filter((character) => character.id !== id));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

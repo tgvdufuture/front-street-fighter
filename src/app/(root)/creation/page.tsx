@@ -5,7 +5,7 @@ import Navbar from "@/components/shared/Navbar";
 import CharacterForm from "@/components/shared/CharacterForm";
 
 export default function CreateCharacter() {
-  const handleCharacterSubmit = (character: {
+  const handleCharacterSubmit = async (character: {
     nom: string;
     image: string | ArrayBuffer | null;
     force: number;
@@ -14,6 +14,39 @@ export default function CreateCharacter() {
     power: number;
     combat: number;
   }) => {
+
+    // Données à envoyer
+    const characterData = {
+      name: "Ok", // Nom du personnage
+      strength: 85, // Force
+      speed: 100, // Vitesse
+      durability: 52, // Endurance
+      power: 10, // Puissance
+      combat: 50 // Combat
+  };
+
+  try {
+      const response = await fetch("http://127.0.0.1:8000/api/characters/add", {
+          method: "POST",
+          headers: {
+              "Authorization": `Bearer ${localStorage.getItem("jwtToken")}`, // Ajoutez le token JWT ici
+          },
+          body: JSON.stringify(characterData), // Convertir les données en JSON
+          // body: JSON.stringify('hello'), // Convertir les données en JSON
+
+      });
+
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to create character: ${errorData.error || response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Character created:", data);
+      // Redirection ou mise à jour de l'état après la création
+  } catch (error) {
+      console.error("Error during character creation:", error);
+  }
     // Logique d'envoi au backend
     console.log("Character created:", character);
     // Redirection possible après la création

@@ -103,63 +103,25 @@ export default function CharactersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchCharacters = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("/api/characters"); // Assurez-vous que l'URL correspond à votre API
+        if (!response.ok) {
+          throw new Error("Failed to fetch characters");
+        }
+        const data = await response.json();
+        setCharacters(data);
+      } catch (err) {
+        setError("Failed to load characters. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchCharacters();
   }, []);
-
-  const fetchCharacters = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Fetch or mock API response
-      const mockCharacters: Character[] = [
-        {
-          id: 1,
-          name: "Ryu",
-          image: "/placeholder.svg",
-          strength: 80,
-          speed: 70,
-          durability: 65,
-          power: 75,
-          combat: 90,
-        },
-        {
-          id: 2,
-          name: "Chun-Li",
-          image: "/placeholder.svg",
-          strength: 65,
-          speed: 90,
-          durability: 60,
-          power: 70,
-          combat: 85,
-        },
-        {
-          id: 3,
-          name: "Guile",
-          image: "/placeholder.svg",
-          strength: 75,
-          speed: 65,
-          durability: 80,
-          power: 70,
-          combat: 85,
-        },
-        {
-          id: 4,
-          name: "Zangief",
-          image: "/placeholder.svg",
-          strength: 95,
-          speed: 40,
-          durability: 90,
-          power: 85,
-          combat: 70,
-        },
-      ];
-      setCharacters(mockCharacters);
-      setIsLoading(false);
-    } catch (err) {
-      setError("Failed to load characters. Please try again later.");
-      setIsLoading(false);
-    }
-  };
 
   const handleDelete = (id: number) => {
     setCharacters((prevCharacters) =>

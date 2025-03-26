@@ -16,7 +16,7 @@ import { Upload } from "lucide-react";
 interface Character {
   id: number;
   nom: string;
-  image: string;
+  image: string | null;
   force: number;
   vitesse: number;
   endurance: number;
@@ -33,7 +33,16 @@ const stats = [
 ];
 
 export default function EditCharacterPage() {
-  const [character, setCharacter] = useState<Character | null>(null);
+  const [character, setCharacter] = useState<Character>({
+    id: 0,
+    nom: "",
+    image: null,
+    force: 50,
+    vitesse: 50,
+    endurance: 50,
+    power: 50,
+    combat: 50,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,12 +94,33 @@ export default function EditCharacterPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Faites votre call API Symfony ici
-    console.log("Character updated:", character);
-    // Vous pouvez rediriger l'utilisateur vers la liste des personnages
-    // router.push("/personnages");
+    try {
+      const response = await fetch("/api/characters/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: character.image,
+          force: character.force,
+          vitesse: character.vitesse,
+          endurance: character.endurance,
+          power: character.power,
+          combat: character.combat,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create character");
+      }
+
+      const newCharacter = await response.json();
+      // Ajoutez le nouveau personnage à l'état ou redirigez
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const chartData = character
@@ -136,7 +166,7 @@ export default function EditCharacterPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center space-x-4 mb-4">
                   <Avatar className="w-20 h-20">
-                    <AvatarImage src={character.image} alt={character.nom} />
+                    <AvatarImage src={character.image as string} alt={character.nom} />
                     <AvatarFallback>
                       {character.nom.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -148,6 +178,7 @@ export default function EditCharacterPage() {
                     <Input
                       id="name"
                       type="text"
+                      name="nom"
                       value={character.nom}
                       onChange={(e) =>
                         setCharacter({ ...character, nom: e.target.value })
