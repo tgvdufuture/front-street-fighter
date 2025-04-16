@@ -15,148 +15,146 @@ const stats = [
   { name: "Combat", key: "combat" },
 ];
 
-type CharacterFormProps = {
-  onSubmit: (character: {
+interface CharacterFormProps {
+  onSubmit: (data: {
     nom: string;
-    image: string | ArrayBuffer | null;
     force: number;
     vitesse: number;
     endurance: number;
     power: number;
     combat: number;
   }) => void;
-};
+  initialData?: {
+    nom: string;
+    force: number;
+    vitesse: number;
+    endurance: number;
+    power: number;
+    combat: number;
+  };
+}
 
-export default function CharacterForm({ onSubmit }: CharacterFormProps) {
+export default function CharacterForm({ onSubmit, initialData }: CharacterFormProps) {
   const [character, setCharacter] = useState({
-    nom: "",
-    image: null as string | ArrayBuffer | null,
-    force: 50,
-    vitesse: 50,
-    endurance: 50,
-    power: 50,
-    combat: 50,
+    nom: initialData?.nom || '',
+    force: initialData?.force || 0,
+    vitesse: initialData?.vitesse || 0,
+    endurance: initialData?.endurance || 0,
+    power: initialData?.power || 0,
+    combat: initialData?.combat || 0,
   });
 
-  // Gestion des statistiques
-  const handleStatChange = (stat: string, value: number[]) => {
-    setCharacter((prev) => ({ ...prev, [stat]: value[0] }));
-  };
-
-  // Gestion de l'image du personnage
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCharacter((prev) => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Soumission du formulaire
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     onSubmit(character);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-      {/* Nom du combattant */}
-      <div className="mb-6">
-        <Label htmlFor="name" className="block mb-2">
-          Nom du combattant
-        </Label>
-        <Input
-          id="name"
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label htmlFor="nom" className="block text-sm font-medium text-gray-700">
+          Nom
+        </label>
+        <input
           type="text"
+          id="nom"
           value={character.nom}
-          onChange={(e) =>
-            setCharacter((prev) => ({ ...prev, nom: e.target.value }))
-          }
+          onChange={(e) => setCharacter({ ...character, nom: e.target.value })}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           required
-          className="w-full bg-gray-800 text-white"
         />
       </div>
 
-      {/* Image du combattant */}
-      <div className="mb-6">
-        <Label htmlFor="image" className="block mb-2">
-          Image de votre combattant
-        </Label>
-        <div className="flex items-center justify-center w-full">
-          <label
-            htmlFor="image"
-            className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600"
-          >
-            {character.image ? (
-              <img
-                src={character.image as string}
-                alt="Character Preview"
-                className="w-full h-full object-cover rounded-lg"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                <p className="mb-2 text-sm text-gray-400">
-                  <span className="font-semibold">
-                    Cliquez pour télécharger
-                  </span>{" "}
-                  ou faites glisser une image ici
-                </p>
-                <p className="text-xs text-gray-400">
-                  PNG, JPG ou GIF (MAX. 800x400px)
-                </p>
-              </div>
-            )}
-            <input
-              id="image"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="force" className="block text-sm font-medium text-gray-700">
+            Force
           </label>
+          <input
+            type="number"
+            id="force"
+            value={character.force}
+            onChange={(e) => setCharacter({ ...character, force: Number(e.target.value) })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            min="0"
+            max="100"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="vitesse" className="block text-sm font-medium text-gray-700">
+            Vitesse
+          </label>
+          <input
+            type="number"
+            id="vitesse"
+            value={character.vitesse}
+            onChange={(e) => setCharacter({ ...character, vitesse: Number(e.target.value) })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            min="0"
+            max="100"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="endurance" className="block text-sm font-medium text-gray-700">
+            Endurance
+          </label>
+          <input
+            type="number"
+            id="endurance"
+            value={character.endurance}
+            onChange={(e) => setCharacter({ ...character, endurance: Number(e.target.value) })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            min="0"
+            max="100"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="power" className="block text-sm font-medium text-gray-700">
+            Power
+          </label>
+          <input
+            type="number"
+            id="power"
+            value={character.power}
+            onChange={(e) => setCharacter({ ...character, power: Number(e.target.value) })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            min="0"
+            max="100"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="combat" className="block text-sm font-medium text-gray-700">
+            Combat
+          </label>
+          <input
+            type="number"
+            id="combat"
+            value={character.combat}
+            onChange={(e) => setCharacter({ ...character, combat: Number(e.target.value) })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            min="0"
+            max="100"
+            required
+          />
         </div>
       </div>
 
-      {/* Statistiques du combattant */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-4">Statistiques du combattant</h2>
-        {stats.map((stat) => (
-          <div key={stat.key} className="mb-4">
-            <Label htmlFor={stat.key} className="block mb-2">
-              {stat.name}:{" "}
-              {String(character[stat.key as keyof typeof character])}
-            </Label>
-            <Slider
-              id={stat.key}
-              min={0}
-              max={100}
-              step={1}
-              value={[character[stat.key as keyof typeof character] as number]}
-              onValueChange={(value) => handleStatChange(stat.key, value)}
-              className="w-full bg-white"
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Bouton de soumission */}
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="flex justify-center"
-      >
-        <Button
+      <div className="flex justify-end">
+        <button
           type="submit"
-          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
-          Créer votre combattant
-        </Button>
-      </motion.div>
+          {initialData ? 'Modifier' : 'Créer'}
+        </button>
+      </div>
     </form>
   );
 }

@@ -7,77 +7,138 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Radar } from "@/components/ui/radar";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/shared/Navbar";
 import { Upload } from "lucide-react";
 
 interface Character {
-  id: number;
   nom: string;
-  image: string | null;
   force: number;
   vitesse: number;
   endurance: number;
-  power: number;
+  puissance: number;
   combat: number;
+  image?: File;
+  imageUrl?: string;
 }
 
-const stats = [
-  { name: "Strength", key: "strength" },
-  { name: "Speed", key: "speed" },
-  { name: "Durability", key: "durability" },
-  { name: "Power", key: "power" },
+type CharacterStats = Pick<Character, 'force' | 'vitesse' | 'endurance' | 'puissance' | 'combat'>;
+
+interface Stat {
+  name: string;
+  key: keyof CharacterStats;
+}
+
+const stats: Stat[] = [
+  { name: "Force", key: "force" },
+  { name: "Vitesse", key: "vitesse" },
+  { name: "Endurance", key: "endurance" },
+  { name: "Puissance", key: "puissance" },
   { name: "Combat", key: "combat" },
 ];
 
-export default function EditCharacterPage() {
-  const [character, setCharacter] = useState<Character>({
-    id: 0,
-    nom: "",
-    image: null,
-    force: 50,
-    vitesse: 50,
-    endurance: 50,
-    power: 50,
-    combat: 50,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+export default function ModificationPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const [character, setCharacter] = useState<Character | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchCharacter();
-  }, []);
-
-  //   Configurer le router
-  //   const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
+  const [chartData, setChartData] = useState<any>(null);
 
   const fetchCharacter = async () => {
-    setIsLoading(true);
-    setError(null);
     try {
-      // Faites votre call API Symfony ici
-      // mock : données de test en dur
-      const mockCharacter: Character = {
-        id: 1,
-        nom: "Ryu",
-        image: "/placeholder.svg",
-        force: 80,
-        vitesse: 70,
-        endurance: 65,
-        power: 75,
-        combat: 90,
+      const token = localStorage.getItem('jwtToken');
+      console.log('Token:', token); // Debug log
+
+      if (!token) {
+        console.log('Pas de token trouvé, redirection vers /connexion'); // Debug log
+        router.push('/connexion');
+        return;
+      }
+
+      console.log('Tentative de récupération du personnage avec ID:', params.id); // Debug log
+      const response = await fetch(`https://127.0.0.1:8000/api/characters/${params.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Statut de la réponse:', response.status); // Debug log
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('Token invalide, redirection vers /connexion'); // Debug log
+          router.push('/connexion');
+          return;
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la récupération du personnage');
+      }
+
+      const data = await response.json();
+      console.log('Structure complète des données reçues:', data); // Debug log
+      console.log('Type des données reçues:', typeof data); // Debug log
+      console.log('Clés des données reçues:', Object.keys(data)); // Debug log
+
+      // Créer un exemple de JSON valide pour la mise à jour
+      const exampleJson = {
+        name: data.name,
+        strength: data.strength,
+        speed: data.speed,
+        durability: data.durability,
+        power: data.power,
+        combat: data.combat,
+        image: data.image // Optionnel, peut être null si pas d'image
       };
-      setCharacter(mockCharacter);
-      setIsLoading(false);
+      console.log('Exemple de JSON valide pour la mise à jour:', JSON.stringify(exampleJson, null, 2));
+
+      // Créer les données pour le graphique radar
+      const chartData = {
+        labels: stats.map(stat => stat.name),
+        datasets: [
+          {
+            label: 'Statistiques',
+            data: stats.map(stat => data[stat.key]),
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          }
+        ]
+      };
+
+      setCharacter({
+        nom: data.name,
+        force: data.strength,
+        vitesse: data.speed,
+        endurance: data.durability,
+        puissance: data.power,
+        combat: data.combat,
+        imageUrl: data.image
+      });
+      setChartData(chartData);
+      if (data.image) {
+        setImagePreview(data.image);
+      }
+      setIsEditing(true);
     } catch (err) {
-      setError("Failed to load character. Please try again later.");
-      setIsLoading(false);
+      console.error('Erreur détaillée:', err); // Debug log
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     }
   };
 
-  const handleStatChange = (stat: string, value: number[]) => {
+  useEffect(() => {
+    // Charger les données au chargement initial
+    fetchCharacter();
+  }, [params.id, router]);
+
+  const handleEditClick = () => {
+    // Réinitialiser l'état d'édition
+    setIsEditing(!isEditing);
+  };
+
+  const handleStatChange = (stat: keyof CharacterStats, value: number[]) => {
     if (character) {
       setCharacter({ ...character, [stat]: value[0] });
     }
@@ -86,225 +147,222 @@ export default function EditCharacterPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && character) {
+      const updatedCharacter = { ...character, image: file };
+      setCharacter(updatedCharacter);
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCharacter({ ...character, image: reader.result as string });
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const response = await fetch("/api/characters/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          image: character.image,
-          force: character.force,
-          vitesse: character.vitesse,
-          endurance: character.endurance,
-          power: character.power,
-          combat: character.combat,
-        }),
-      });
+    if (!character) return;
 
-      if (!response.ok) {
-        throw new Error("Failed to create character");
+    try {
+      const token = localStorage.getItem('jwtToken');
+      if (!token) {
+        router.push('/connexion');
+        return;
       }
 
-      const newCharacter = await response.json();
-      // Ajoutez le nouveau personnage à l'état ou redirigez
-    } catch (error) {
-      console.error(error);
+      // Créer un FormData avec les données attendues par l'API
+      const formData = new FormData();
+      formData.append('name', character.nom);
+      formData.append('strength', character.force.toString());
+      formData.append('speed', character.vitesse.toString());
+      formData.append('durability', character.endurance.toString());
+      formData.append('power', character.puissance.toString());
+      formData.append('combat', character.combat.toString());
+
+      // Ajouter l'image si elle existe
+      if (character.image) {
+        formData.append('image', character.image);
+      }
+
+      console.log('Données à envoyer:', {
+        name: character.nom,
+        strength: character.force,
+        speed: character.vitesse,
+        durability: character.endurance,
+        power: character.puissance,
+        combat: character.combat,
+        image: character.image ? character.image.name : 'aucune image'
+      });
+
+      const response = await fetch(`https://127.0.0.1:8000/api/characters/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      console.log('Statut de la réponse PUT:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erreur de l\'API:', errorData);
+        throw new Error(errorData.error || 'Erreur lors de la mise à jour du personnage');
+      }
+
+      router.push('/');
+    } catch (err) {
+      console.error('Erreur détaillée:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de la mise à jour');
     }
   };
 
-  const chartData = character
-    ? {
-        labels: stats.map((stat) => stat.name),
-        datasets: [
-          {
-            label: "Character Stats",
-            data: stats.map(
-              (stat) => character[stat.key as keyof Character] as number
-            ),
-            backgroundColor: "rgba(255, 99, 132, 0.2)",
-            borderColor: "rgba(255, 99, 132, 1)",
-            borderWidth: 2,
-          },
-        ],
-      }
-    : null;
+  if (!character) {
+    return <div className="container mx-auto px-4 py-8">Chargement...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Navbar */}
+    <div className="min-h-screen bg-gray-900">
       <Navbar />
-
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <motion.h1
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-4xl font-bold mb-8 text-center"
-        >
-          Modification du Combattant
-        </motion.h1>
-
-        {isLoading ? (
-          <p className="text-center">Chargement des combattants...</p>
-        ) : error ? (
+        {error ? (
           <p className="text-center text-red-500">{error}</p>
-        ) : character ? (
-          <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-            <Card className="bg-gray-800 mb-6">
-              <CardContent className="pt-6">
-                <div className="flex items-center space-x-4 mb-4">
-                  <Avatar className="w-20 h-20">
-                    <AvatarImage src={character.image as string} alt={character.nom} />
-                    <AvatarFallback>
-                      {character.nom.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <Label htmlFor="name" className="block mb-2 text-red-500">
-                      Nom du combattant
-                    </Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      name="nom"
-                      value={character.nom}
-                      onChange={(e) =>
-                        setCharacter({ ...character, nom: e.target.value })
-                      }
-                      required
-                      className="w-full bg-gray-700 text-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="image" className="block mb-2 text-red-500">
-                    Modifier l'image du combattant
-                  </Label>
-                  <div className="flex items-center justify-center w-full">
-                    <label
-                      htmlFor="image"
-                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600"
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 mb-3 text-gray-400" />
-                        <p className="mb-2 text-sm text-gray-400">
-                          <span className="font-semibold">
-                            Clique pour télécharger
-                          </span>{" "}
-                          ou fais glisser une image ici
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          PNG, JPG or GIF (MAX. 800x400px)
-                        </p>
-                      </div>
+        ) : (
+          character && isEditing ? (
+            <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+              <Card className="bg-gray-800 mb-6">
+                <CardContent className="pt-6">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="relative">
+                      <Avatar className="w-20 h-20">
+                        {imagePreview ? (
+                          <img src={imagePreview} alt="Aperçu" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          <AvatarFallback>
+                            {character.nom.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <label
+                        htmlFor="image-upload"
+                        className="absolute bottom-0 right-0 bg-red-600 p-1 rounded-full cursor-pointer hover:bg-red-700"
+                      >
+                        <Upload className="w-4 h-4 text-white" />
+                      </label>
                       <input
-                        id="image"
+                        id="image-upload"
                         type="file"
                         accept="image/*"
                         onChange={handleImageChange}
                         className="hidden"
                       />
-                    </label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800 mb-6">
-              <CardContent className="pt-6">
-                <h2 className="text-2xl font-bold mb-4 text-white">
-                  Statistiques
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    {stats.map((stat) => (
-                      <div key={stat.key} className="mb-4">
-                        <Label
-                          htmlFor={stat.key}
-                          className="block mb-2 text-white"
-                        >
-                          {stat.name}: {character[stat.key as keyof Character]}
-                        </Label>
-                        <Slider
-                          id={stat.key}
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={[
-                            character[stat.key as keyof Character] as number,
-                          ]}
-                          onValueChange={(value) =>
-                            handleStatChange(stat.key, value)
-                          }
-                          className="w-full"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="bg-gray-700 p-4 rounded-lg">
-                    {chartData && (
-                      <Radar
-                        data={chartData}
-                        options={{
-                          scales: {
-                            r: {
-                              angleLines: {
-                                color: "rgba(255, 255, 255, 0.2)",
-                              },
-                              grid: {
-                                color: "rgba(255, 255, 255, 0.2)",
-                              },
-                              pointLabels: {
-                                color: "rgba(255, 255, 255, 0.7)",
-                              },
-                              ticks: {
-                                color: "rgba(255, 255, 255, 0.7)",
-                                backdropColor: "transparent",
-                              },
-                            },
-                          },
-                          plugins: {
-                            legend: {
-                              display: false,
-                            },
-                          },
-                          maintainAspectRatio: false,
-                        }}
-                        className="w-full h-64"
+                    </div>
+                    <div>
+                      <Label htmlFor="name" className="block mb-2 text-red-500">
+                        Nom du combattant
+                      </Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        name="name"
+                        value={character.nom}
+                        onChange={(e) =>
+                          setCharacter({ ...character, nom: e.target.value })
+                        }
+                        required
+                        className="w-full bg-gray-700 text-white"
                       />
-                    )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex justify-center"
-            >
+              <Card className="bg-gray-800 mb-6">
+                <CardContent className="pt-6">
+                  <h2 className="text-2xl font-bold mb-4 text-white">
+                    Statistiques
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      {stats.map((stat) => (
+                        <div key={stat.key} className="mb-4">
+                          <Label
+                            htmlFor={stat.key}
+                            className="block mb-2 text-white"
+                          >
+                            {stat.name}: {character[stat.key]}
+                          </Label>
+                          <Slider
+                            id={stat.key}
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={[character[stat.key]]}
+                            onValueChange={(value) => handleStatChange(stat.key, value)}
+                            className="w-full"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      {chartData && (
+                        <Radar
+                          data={chartData}
+                          options={{
+                            scales: {
+                              r: {
+                                angleLines: {
+                                  color: "rgba(255, 255, 255, 0.2)",
+                                },
+                                grid: {
+                                  color: "rgba(255, 255, 255, 0.2)",
+                                },
+                                pointLabels: {
+                                  color: "rgba(255, 255, 255, 0.7)",
+                                },
+                                ticks: {
+                                  color: "rgba(255, 255, 255, 0.7)",
+                                  backdropColor: "transparent",
+                                },
+                              },
+                            },
+                            plugins: {
+                              legend: {
+                                display: false,
+                              },
+                            },
+                            maintainAspectRatio: false,
+                          }}
+                          className="w-full h-64"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex justify-center"
+              >
+                <Button
+                  type="submit"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Confirmer les modifications
+                </Button>
+              </motion.div>
+            </form>
+          ) : (
+            <div className="flex justify-center">
               <Button
-                type="submit"
+                onClick={handleEditClick}
                 className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
               >
-                Confirmer les modifications
+                Modifier le personnage
               </Button>
-            </motion.div>
-          </form>
-        ) : (
-          <p className="text-center">Pas de personnages trouvé.</p>
+            </div>
+          )
         )}
       </main>
     </div>

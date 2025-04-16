@@ -2,17 +2,101 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import Navbar from "@/components/shared/Navbar";
 
 interface Character {
   id: number;
   name: string;
-  image: string;
+  strength: number;
+  speed: number;
+  durability: number;
+  power: number;
+  combat: number;
+  image?: string;
 }
 
+interface CharacterCardProps {
+  character: Character;
+  onDelete: (id: number) => void;
+  onEdit: (id: number) => void;
+}
+
+const CharacterCard = ({ character, onDelete, onEdit }: CharacterCardProps) => {
+  return (
+    <Card className="bg-gray-800 text-white">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-4">
+          <Avatar>
+            {character.image ? (
+              <AvatarImage src={`/uploads/characters/${character.image}`} alt={character.name} />
+            ) : (
+              <AvatarFallback>
+                {character.name.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <span>{character.name}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <div>
+            <div className="flex justify-between text-sm">
+              <span>Strength</span>
+              <span>{character.strength}</span>
+            </div>
+            <Progress value={character.strength} className="h-2 bg-white" />
+          </div>
+          <div>
+            <div className="flex justify-between text-sm">
+              <span>Speed</span>
+              <span>{character.speed}</span>
+            </div>
+            <Progress value={character.speed} className="h-2 bg-white" />
+          </div>
+          <div>
+            <div className="flex justify-between text-sm">
+              <span>Durability</span>
+              <span>{character.durability}</span>
+            </div>
+            <Progress value={character.durability} className="h-2 bg-white" />
+          </div>
+          <div>
+            <div className="flex justify-between text-sm">
+              <span>Power</span>
+              <span>{character.power}</span>
+            </div>
+            <Progress value={character.power} className="h-2 bg-white" />
+          </div>
+          <div>
+            <div className="flex justify-between text-sm">
+              <span>Combat</span>
+              <span>{character.combat}</span>
+            </div>
+            <Progress value={character.combat} className="h-2 bg-white" />
+          </div>
+        </div>
+        <div className="flex justify-end space-x-2 mt-4">
+          <Button variant="outline" onClick={() => onEdit(character.id)}>
+            Modifier
+          </Button>
+          <Button variant="destructive" onClick={() => onDelete(character.id)}>
+            Supprimer
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Characters = () => {
+  const router = useRouter();
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [currentCharacter, setCurrentCharacter] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,86 +106,100 @@ const Characters = () => {
 
   const fetchCharacters = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/characters"); // Remplacez par l'URL de votre API Symfony
-      if (!response.ok) {
-        throw new Error("Failed to fetch characters");
+      const token = localStorage.getItem('jwtToken');
+      if (!token) {
+        router.push('/connexion');
+        return;
       }
+
+      const response = await fetch("https://127.0.0.1:8000/api/characters", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        router.push('/connexion');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la récupération des personnages");
+      }
+
       const data = await response.json();
       setCharacters(data);
       setIsLoading(false);
     } catch (err) {
-      setError("Failed to load characters. Please try again later.");
+      setError("Erreur lors du chargement des personnages. Veuillez réessayer plus tard.");
       setIsLoading(false);
     }
   };
 
-  const nextCharacter = () => {
-    setCurrentCharacter((prev) => (prev + 1) % characters.length);
-  };
-
-  const prevCharacter = () => {
-    setCurrentCharacter(
-      (prev) => (prev - 1 + characters.length) % characters.length
-    );
-  };
-
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`/api/characters/${id}`, {
-        method: "DELETE",
+      const token = localStorage.getItem('jwtToken');
+      if (!token) {
+        router.push('/connexion');
+        return;
+      }
+
+      const response = await fetch(`https://127.0.0.1:8000/api/characters/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete character");
+        throw new Error("Erreur lors de la suppression du personnage");
       }
 
-      setCharacters((prev) => prev.filter((character) => character.id !== id));
-    } catch (error) {
-      console.error(error);
+      setCharacters(characters.filter(character => character.id !== id));
+    } catch (err) {
+      setError("Erreur lors de la suppression du personnage. Veuillez réessayer plus tard.");
     }
   };
 
+  if (isLoading) {
+    return <div className="text-center">Chargement...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
+
   return (
-    <section className="py-16 bg-gray-800">
-      <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold mb-8 text-center">
-          Rencontre les combattants
-        </h2>
-        {isLoading ? (
-          <p className="text-center">Chargement des combattants...</p>
-        ) : error ? (
-          <p className="text-center text-red-500">{error}</p>
-        ) : characters.length > 0 ? (
-          <div className="flex items-center justify-center">
-            <button onClick={prevCharacter} className="mr-4">
-              <ChevronLeft size={24} />
-            </button>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        <motion.h1
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-4xl font-bold mb-8 text-center"
+        >
+          Les Combattants
+        </motion.h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {characters.map((character) => (
             <motion.div
-              key={currentCharacter}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
-              className="text-center"
+              key={character.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              <img
-                src={characters[currentCharacter].image}
-                alt={characters[currentCharacter].name}
-                className="mx-auto mb-4 rounded-lg shadow-lg w-64 h-64 object-cover"
+              <CharacterCard
+                character={character}
+                onDelete={handleDelete}
+                onEdit={(id: number) => router.push(`/modification/${id}`)}
               />
-              <h3 className="text-2xl font-bold">
-                {characters[currentCharacter].name}
-              </h3>
             </motion.div>
-            <button onClick={nextCharacter} className="ml-4">
-              <ChevronRight size={24} />
-            </button>
-          </div>
-        ) : (
-          <p className="text-center">Pas de combattants disponible.</p>
-        )}
-      </div>
-    </section>
+          ))}
+        </div>
+      </main>
+    </div>
   );
 };
 

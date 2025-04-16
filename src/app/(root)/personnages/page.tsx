@@ -107,8 +107,22 @@ export default function CharactersPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch("/api/characters"); // Assurez-vous que l'URL correspond à votre API
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+          window.location.href = "/connexion";
+          return;
+        }
+        const response = await fetch("https://127.0.0.1:8000/api/characters", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
         if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.removeItem("jwtToken");
+            window.location.href = "/connexion";
+            return;
+          }
           throw new Error("Failed to fetch characters");
         }
         const data = await response.json();
@@ -123,17 +137,46 @@ export default function CharactersPage() {
     fetchCharacters();
   }, []);
 
-  const handleDelete = (id: number) => {
-    setCharacters((prevCharacters) =>
-      prevCharacters.filter((character) => character.id !== id)
-    );
+  const handleDelete = async (id: number) => {
+    try {
+      const token = localStorage.getItem("jwtToken");
+      if (!token) {
+        window.location.href = "/connexion";
+        return;
+      }
+
+      const response = await fetch(`https://127.0.0.1:8000/api/characters/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("jwtToken");
+          window.location.href = "/connexion";
+          return;
+        }
+        throw new Error("Failed to delete character");
+      }
+
+      setCharacters((prevCharacters) =>
+        prevCharacters.filter((character) => character.id !== id)
+      );
+    } catch (error) {
+      console.error("Error deleting character:", error);
+      setError("Failed to delete character. Please try again later.");
+    }
   };
 
   const handleEdit = (id: number) => {
-    // Faire une redirection vers la page d'édition de personnages
-    console.log("Edit character with ID:", id);
-    // Vous pouvez utiliser la méthode `push` de `router` pour naviguer vers une autre page
-    // router.push(`/modification/${id}`);
+    const token = localStorage.getItem("jwtToken");
+    if (!token) {
+      window.location.href = "/connexion";
+      return;
+    }
+    window.location.href = `/modification/${id}`;
   };
 
   return (
