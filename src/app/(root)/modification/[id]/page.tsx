@@ -79,20 +79,6 @@ export default function ModificationPage({ params }: { params: { id: string } })
 
       const data = await response.json();
       console.log('Structure complète des données reçues:', data); // Debug log
-      console.log('Type des données reçues:', typeof data); // Debug log
-      console.log('Clés des données reçues:', Object.keys(data)); // Debug log
-
-      // Créer un exemple de JSON valide pour la mise à jour
-      const exampleJson = {
-        name: data.name,
-        strength: data.strength,
-        speed: data.speed,
-        durability: data.durability,
-        power: data.power,
-        combat: data.combat,
-        image: data.image // Optionnel, peut être null si pas d'image
-      };
-      console.log('Exemple de JSON valide pour la mise à jour:', JSON.stringify(exampleJson, null, 2));
 
       // Créer les données pour le graphique radar
       const chartData = {
@@ -108,6 +94,7 @@ export default function ModificationPage({ params }: { params: { id: string } })
         ]
       };
 
+      const imageUrl = data.image?.startsWith('/') ? `https://127.0.0.1:8000${data.image}` : data.image;
       setCharacter({
         nom: data.name,
         force: data.strength,
@@ -115,7 +102,7 @@ export default function ModificationPage({ params }: { params: { id: string } })
         endurance: data.durability,
         puissance: data.power,
         combat: data.combat,
-        imageUrl: data.image
+        imageUrl: imageUrl
       });
       setChartData(chartData);
       if (data.image) {
@@ -177,39 +164,31 @@ export default function ModificationPage({ params }: { params: { id: string } })
       formData.append('durability', character.endurance.toString());
       formData.append('power', character.puissance.toString());
       formData.append('combat', character.combat.toString());
-
-      // Ajouter l'image si elle existe
-      if (character.image) {
-        formData.append('image', character.image);
+      
+      // Gestion de l'image
+      if (character.image instanceof File) {
+        formData.append('image', character.image, character.image.name);
       }
 
-      console.log('Données à envoyer:', {
-        name: character.nom,
-        strength: character.force,
-        speed: character.vitesse,
-        durability: character.endurance,
-        power: character.puissance,
-        combat: character.combat,
-        image: character.image ? character.image.name : 'aucune image'
-      });
-
       const response = await fetch(`https://127.0.0.1:8000/api/characters/${params.id}`, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: formData
       });
 
-      console.log('Statut de la réponse PUT:', response.status);
+      console.log('Statut de la réponse POST:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Erreur de l\'API:', errorData);
         throw new Error(errorData.error || 'Erreur lors de la mise à jour du personnage');
       }
+      const data = await response.json();
+      console.log('Structure complète des données reçues:', data); // Debug log
 
-      router.push('/');
+      router.push('/personnages');
     } catch (err) {
       console.error('Erreur détaillée:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de la mise à jour');
@@ -235,7 +214,11 @@ export default function ModificationPage({ params }: { params: { id: string } })
                     <div className="relative">
                       <Avatar className="w-20 h-20">
                         {imagePreview ? (
-                          <img src={imagePreview} alt="Aperçu" className="w-full h-full object-cover rounded-full" />
+                          <img 
+                            src={imagePreview?.startsWith('/') ? `https://127.0.0.1:8000${imagePreview}` : imagePreview} 
+                            alt="Aperçu" 
+                            className="w-full h-full object-cover rounded-full" 
+                          />
                         ) : (
                           <AvatarFallback>
                             {character.nom.slice(0, 2).toUpperCase()}

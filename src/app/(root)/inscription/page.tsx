@@ -3,9 +3,6 @@
 import { motion } from "framer-motion";
 import Navbar from "@/components/shared/Navbar";
 import { useState } from "react";
-
-
-
 export default function Inscription() {
     const [email, setEmail] = useState("");
     const [pseudo, setPseudo] = useState("");
@@ -70,6 +67,7 @@ export default function Inscription() {
                             onChange={(e) => setEmail(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring focus:ring-indigo-500"
                             required
+                            suppressHydrationWarning
                         />
                     </div>
                     <div className="mb-4">
@@ -83,6 +81,7 @@ export default function Inscription() {
                             onChange={(e) => setPseudo(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring focus:ring-indigo-500"
                             required
+                            suppressHydrationWarning
                         />
                     </div>
                     <div className="mb-6">
@@ -96,6 +95,7 @@ export default function Inscription() {
                             onChange={(e) => setPassword(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring focus:ring-indigo-500"
                             required
+                            suppressHydrationWarning
                         />
                     </div>
                     <button

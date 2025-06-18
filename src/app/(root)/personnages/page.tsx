@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 interface Character {
   id: number;
   name: string;
-  image: string;
+  image: string | null;
   strength: number;
   speed: number;
   durability: number;
@@ -33,7 +33,7 @@ const CharacterCard = ({
       <CardHeader>
         <CardTitle className="flex items-center space-x-4">
           <Avatar>
-            <AvatarImage src={character.image} alt={character.name} />
+            <AvatarImage src={character.image ? "https://127.0.0.1:8000/" + character.image : "https://picsum.photos/900/600"} alt={character.name} />
             <AvatarFallback>
               {character.name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -127,6 +127,7 @@ export default function CharactersPage() {
         }
         const data = await response.json();
         setCharacters(data);
+        console.log(data);
       } catch (err) {
         setError("Failed to load characters. Please try again later.");
       } finally {

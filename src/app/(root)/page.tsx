@@ -54,9 +54,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Character Showcase */}
-      <Characters />
-
       {/* Features Section */}
       <section className="py-16">
         <div className="container mx-auto px-4">
