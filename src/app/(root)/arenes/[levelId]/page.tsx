@@ -132,11 +132,10 @@ function ArenaContent({ level, characterId }: ArenaContentProps) {
     }
   }, [combatState?.player.health, character]);
 
-  // Fonction pour générer des dégâts aléatoires entre 10 et 50
+  // Fonction pour générer des dégâts aléatoires
   const getRandomDamage = useCallback((isEnemy: boolean = false): { damage: number; isCritical: boolean } => {
-    // Pour l'ennemi, on utilise une plage de dégâts fixe entre 10 et 50
-    // Pour le joueur, on pourrait avoir une formule différente si nécessaire
-    const minDamage = 10;
+    // Même plage de dégâts pour le joueur et l'ennemi
+    const minDamage = 10;    // 10-50 pour les deux
     const maxDamage = 50;
     
     // Générer des dégâts de base entre min et max
@@ -161,23 +160,30 @@ function ArenaContent({ level, characterId }: ArenaContentProps) {
     // Déterminer si l'attaquant est l'ennemi
     const isEnemy = attacker !== combatState?.player;
     
-    // Obtenir les dégâts de base (entre 10 et 50 pour l'ennemi, avec formule similaire pour le joueur)
+    // Obtenir les dégâts de base selon les plages définies
     const { damage: baseDamage, isCritical } = getRandomDamage(isEnemy);
     
-    // Bonus pour les attaques spéciales (20% de dégâts en plus, seulement pour le joueur)
-    const damageWithSpecial = (isSpecial && !isEnemy) 
-      ? Math.floor(baseDamage * 1.2) 
-      : baseDamage;
+    // Appliquer le bonus d'attaque spéciale (20% de dégâts en plus, seulement pour le joueur)
+    let modifiedDamage = baseDamage;
+    if (isSpecial && !isEnemy) {
+      modifiedDamage = Math.floor(baseDamage * 1.2);
+    }
     
-    // Réduction des dégâts basée sur la défense (entre 0% et 50% de réduction)
-    const defenseReduction = Math.min(0.5, defender.durability / 200);
-    const finalDamage = Math.max(1, Math.floor(damageWithSpecial * (1 - defenseReduction)));
+    // Appliquer la réduction des dégâts basée sur la défense (entre 0% et 25% de réduction)
+    // Réduite à 25% max au lieu de 50% pour garder les dégâts plus proches des plages souhaitées
+    const defenseReduction = Math.min(0.25, defender.durability / 400);
+    let finalDamage = Math.max(1, Math.floor(modifiedDamage * (1 - defenseReduction)));
+    
+    // S'assurer que les dégâts restent dans les limites souhaitées (10-50 pour tous)
+    const minDamage = 10;
+    const maxDamage = 50;
+    finalDamage = Math.max(minDamage, Math.min(maxDamage, finalDamage));
     
     return {
       damage: finalDamage,
       isCritical
     };
-  }, [getRandomDamage]);
+  }, [getRandomDamage, combatState?.player]);
 
   // Fonction pour charger le personnage
   useEffect(() => {
